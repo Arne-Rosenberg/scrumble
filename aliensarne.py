@@ -12,7 +12,7 @@ if not pygame.image.get_extended():
 
 
 #game constants
-MAX_SHOTS      = 7      #most player bullets onscreen
+MAX_SHOTS      = 6      #most player bullets onscreen
 ALIEN_ODDS     = 22     #chances a new alien appears
 BOMB_ODDS      = 60    #chances a new bomb will drop
 ALIEN_RELOAD   = 12     #frames between new aliens
@@ -238,7 +238,7 @@ class Shot(pygame.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=pos)
         #self.rect.center=pos
-        self.frame=1
+        self.frame=1 
 
     def update(self):
         self.rect.move_ip(self.speed,0)
