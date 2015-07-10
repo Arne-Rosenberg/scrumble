@@ -11,14 +11,19 @@ if not pygame.image.get_extended():
     raise SystemExit("Sorry, extended image module required")
 
 
-#game constants
-MAX_SHOTS      = 6      #most player bullets onscreen
-ALIEN_ODDS     = 22     #chances a new alien appears
-BOMB_ODDS      = 60    #chances a new bomb will drop
-ALIEN_RELOAD   = 12     #frames between new aliens
-SCREENRECT     = Rect(0, 0, 1280, 700)
+###########################################game constants
+MAX_SHOTS      = 6      #most player bullets onscreen-- standard 6
+ALIEN_ODDS     = 22     #chances a new alien appears-- standard 22
+BOMB_ODDS      = 60    #chances a new bomb will drop-- standard 60
+ALIEN_RELOAD   = 12     #frames between new aliens-- standard 12
+SCREENRECT     = Rect(0, 0, 1280, 700)  #standard (0,0,1280,700) 
 SCORE          = 0
 
+#########################################other vars
+
+bossgeschafftvalue = 0
+
+###################################################
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 
@@ -126,8 +131,6 @@ class Alien(pygame.sprite.Sprite):
         self.image = self.images[self.frame//self.animcycle%3]
 
 class Boss1(pygame.sprite.Sprite):
-    #speedx=0
-    #speedy=0
     animcycle = 16
     images = []
     def __init__(self):
@@ -166,8 +169,6 @@ class Boss1(pygame.sprite.Sprite):
         self.image = self.images[self.frame//self.animcycle%4]
         
 class Herz(pygame.sprite.Sprite):
-    #speedx=0
-    #speedy=0
     animcycle = 8
     images = []
     def __init__(self,myboss):
@@ -178,12 +179,18 @@ class Herz(pygame.sprite.Sprite):
         self.rect.center=myboss.rect.center
         self.hitpoints=6
         self.frame=1
-    
+           
     def treffer(self):
         self.hitpoints-=1
+        pygame.font.init()
         if self.hitpoints<=0:
             self.myboss.kill()
             self.kill()
+            global SCORE
+            SCORE = SCORE+1000
+            global bossgeschafftvalue
+            bossgeschafftvalue = 1
+                        
         else:
             self.image=self.images[6-self.hitpoints]
             self.rect = self.image.get_rect()
@@ -212,7 +219,29 @@ class Herz(pygame.sprite.Sprite):
             self.image=pygame.transform.rotozoom(self.image,0.0,1.3)
             self.rect = self.image.get_rect()
             self.rect.center = self.myboss.rect.center
-            
+
+
+
+
+class LevelCount(pygame.sprite.Sprite):
+	def __init__(self):
+		pygame.sprite.Sprite.__init__(self, self.containers)
+		self.font = pygame.font.Font(None, 60)
+		self.update()
+		self.rect = self.image.get_rect().move(350,640)
+		self.font.set_bold(1)
+		
+	def update(self):
+		global bossgeschafftvalue
+		if bossgeschafftvalue == 1:
+			self.bossgestorbenvar = "LEVEL 1 COMPLETE!!!!!"
+			self.image = self.font.render(self.bossgestorbenvar, True, (255,255,255))
+			print ("This works")
+
+
+
+
+
 class Explosion(pygame.sprite.Sprite):
     defaultlife = 16
     animcycle = 4
@@ -269,53 +298,58 @@ class Bomb(pygame.sprite.Sprite):
 class Score(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.font = pygame.font.Font(None, 20)
+        self.font = pygame.font.Font(None, 40)
         self.font.set_italic(1)
         self.color = Color('white')
         self.lastscore = -1
         self.update()
-        self.rect = self.image.get_rect().move(10,10)
+        self.rect = self.image.get_rect().move(20,20)
 
     def update(self):
         if SCORE != self.lastscore:
             self.lastscore = SCORE
             msg = "Score: %d" % SCORE
-            self.image = self.font.render(msg, 0, self.color)
+            self.image = self.font.render(msg, True, self.color)
 
 
 
 def main(winstyle = 0):
-    # Initialize pygame
+    
+    #var -------------------------
+    
+    global bossgeschafftvalue
+    bossgeschafftvalue = 0
+
+    #var--------------------------
+    
     pygame.init()
     if pygame.mixer and not pygame.mixer.get_init():
         print ('Warning, no sound')
         pygame.mixer = None
 
-    # Set the display mode
+    # ------------------------------------------------------------Set the display mode
     winstyle = 0  # |FULLSCREEN
     bestdepth = pygame.display.mode_ok(SCREENRECT.size, winstyle, 32)
     screen = pygame.display.set_mode(SCREENRECT.size, winstyle, bestdepth)
     clock = pygame.time.Clock()
     
-    #Load images, assign to sprite classes
-    #(do this before the classes are used, after screen setup)
+    #---------------------------------------------------------Load images, assign to sprite classes
+    #-----------------------------------------(do this before the classes are used, after screen setup)
     img = load_image('raumschiff.png')
     Player.images = [img, pygame.transform.flip(img, 1, 0)]
     Explosion.images = load_images('hertzexplosion1.png','hertzexplosion2.png','hertzexplosion3.png','hertzexplosion4.png')
-    #Explosion.images = [img, pygame.transform.flip(img, 1, 1)]
-    #Alien.images = load_images('alien1.png', 'alien2.png', 'alien3.png')
     Alien.images = load_images('monster1.png', 'monster2.png', 'monster3.png')
     Bomb.images = [load_image('tnt.png')]
     Shot.images = load_images('kugel3.png','kugel2.png')
     Boss1.images = load_images('gehirn1.png','gehirn2.png','gehirn3.png','gehirn4.png')
-    #decorate the game window
+    #-----------------------------------------------------------------------------------------------decorate the game window
     icon = pygame.transform.scale(Alien.images[0], (32, 32))
     pygame.display.set_icon(icon)
     pygame.display.set_caption('Pygame Aliens')
     pygame.mouse.set_visible(0)
     Herz.images=load_images('herz1.png','herz2.png','herz3.png','herz4.png','herz5.png','herz6.png')
 
-    #create the background, tile the bgd image
+    #-------------------------------------------------------------------create the background, tile the bgd image
     bgdtile = load_image('space2.jpeg')
     background = pygame.Surface(SCREENRECT.size)
     for x in range(0, SCREENRECT.width, bgdtile.get_width()):
@@ -323,15 +357,15 @@ def main(winstyle = 0):
     screen.blit(background, (0,0))
     pygame.display.flip()
 
-    #load the sound effects
+    #-------------------------------------------------------------------------------load the sound effects
     boom_sound = load_sound('boom.wav')
     shoot_sound = load_sound('car_door.wav')
     if pygame.mixer:
-        music = os.path.join(main_dir, 'data', 'house_lo.wav')
+        music = os.path.join(main_dir, 'data', 'Naph - Sapphire.mp3')
         pygame.mixer.music.load(music)
         pygame.mixer.music.play(-1)
 
-    # Initialize Game Groups
+    #----------------------------------------------------------------------------------- Initialize Game Groups
     aliens = pygame.sprite.Group()
     shots = pygame.sprite.Group()
     bombs = pygame.sprite.Group()
@@ -339,80 +373,90 @@ def main(winstyle = 0):
     lastalien = pygame.sprite.GroupSingle()
     bosse = pygame.sprite.Group()
 
-    #assign default groups to each sprite class
+    #--------------------------------------------------------assign default groups to each sprite class
     Player.containers = all
     Alien.containers = aliens, all, lastalien
     Shot.containers = shots, all
     Bomb.containers = bombs, all
     Explosion.containers = all
     Score.containers = all
+    LevelCount.containers = all
     Boss1.containers= bosse, all
     Herz.containers= bosse,all
 
-    #Create Some Starting Values
+    #-------------------------------------------------------------------Create Some Starting Values
     global score
     alienreload = ALIEN_RELOAD
     kills = 0
     clock = pygame.time.Clock()
 
-    #initialize our starting sprites
+    #-------------------------------------------------------------initialize our starting sprites
     global SCORE
-    #boss1=False
-    #boss2=False
     player = Player()
     Alien() #note, this 'lives' because it goes into a sprite group
     if pygame.font:
         all.add(Score())
 
     playtime = 0.0
+    growingvalue = 0
     
-    while player.alive():
+    
+    ################################ GAME STARTS #######################################
+    
+    while player.alive(): 
 
         milliseconds = clock.tick(60) #fps
         playtime += milliseconds / 1000.0
-        #boss?
-        if playtime> 1 and len(bosse) == 0:
+        growingvalue = growingvalue + 1 
+        
+        if growingvalue == 8:
+			growingvalue = 0
+			SCORE = SCORE + 1
+			
+                   
+        if playtime > 1 and len(bosse) < 1 and bossgeschafftvalue == 0 :
+			Herz(Boss1())
+			
+
             
-            Herz(Boss1())
-        #if playtime > 8 and len(bosse) < 3:
-			#Herz(Boss1())
-            
-        #get input
+        #------------------------------------------------------------------------get input
         for event in pygame.event.get():
             if event.type == QUIT or \
                 (event.type == KEYDOWN and event.key == K_ESCAPE):
                     return
         keystate = pygame.key.get_pressed()
 
-        # clear/erase the last drawn sprites
+        #------------------------------------------------------------------ clear/erase the last drawn sprites
         all.clear(screen, background)
 
-        #update all the sprites
+        #-------------------------------------------------------------------update all the sprites
+        
         all.update()
 
-        #handle player input
+        #---------------------------------------------------------------------handle player input
         directionx = keystate[K_RIGHT] - keystate[K_LEFT]
         player.move(directionx)
         directiony = keystate[K_DOWN] - keystate[K_UP]
         player.movey(directiony)
         firing = keystate[K_SPACE]
+        
         if not player.reloading and firing and len(shots) < MAX_SHOTS:
             Shot(player.gunpos())
             shoot_sound.play()
         player.reloading = firing
 
-        # Create new alien
+        #-------------------------------------------------------------------- Create new alien
         if alienreload:
             alienreload = alienreload - 1
         elif not int(random.random() * ALIEN_ODDS):
             Alien()
             alienreload = ALIEN_RELOAD
 
-        # Drop bombs
+        #--------------------------------------------------------------------------- Drop bombs
         if lastalien and not int(random.random() * BOMB_ODDS):
             Bomb(lastalien.sprite)
 
-        # Detect collisions
+        #------------------------------------------------------------------------------ Detect collisions
         #for alien in pygame.sprite.spritecollide(player, aliens, 1):
         for alien in aliens :
             
@@ -450,7 +494,7 @@ def main(winstyle = 0):
         for shot in pygame.sprite.groupcollide(shots, bombs, 1,1):
             boom_sound.play()
             Explosion(shot)
-            SCORE= SCORE +5
+            SCORE= SCORE +100
             
         for shot in shots:
             for boss in bosse:
@@ -458,13 +502,12 @@ def main(winstyle = 0):
                  for crashshot in crashgroup:
                      Explosion(crashshot)
                      boss.treffer()    
-        #draw the scene
+        #-----------------------------------------------------------------------draw the scene
         dirty = all.draw(screen)
         pygame.display.update(dirty)
 
-        #cap the framerate
+        #-------------------------------------------------------------------------cap the framerate
         clock.tick(40)
-
     if pygame.mixer:
         pygame.mixer.music.fadeout(1000)
     pygame.time.wait(1000)
@@ -472,5 +515,4 @@ def main(winstyle = 0):
 
 
 
-#call the "main" function if running this script
 if __name__ == '__main__': main()
